@@ -1,0 +1,126 @@
+---
+title: "P8105 HW1 — dj2764"
+author: "Daniel Jiao"
+output: github_document
+---
+
+# Problem 1
+
+
+```{r setup, include = FALSE}
+library(ggplot2)
+```
+
+## Load the 'moderndive' library & dataset:
+```{r warning = FALSE}
+library(moderndive)
+data("early_january_weather")
+```
+
+
+## Short description of the dataset:
+
+
+The `early_january_weather` dataset contains `r nrow(early_january_weather)` rows and `r ncol(early_january_weather)` columns of hourly weather observations for early January 2013 at NYC-area airports.
+
+__________________________________
+
+### Key variables
+
+- `origin`: weather station / airport code (EWR, JFK, LGA).
+- `time_hour`: POSIXct timestamp for the observation.
+- `temp`: air temperature in °F **(mean = `r round(mean(early_january_weather$temp, na.rm = TRUE), 2)`)**.
+- `humid`: relative humidity (%).
+- `wind_dir`: wind direction (0–360 degrees).
+- `wind_speed`, `wind_gust`: wind speed / gust (mph).
+- `precip`: hourly precipitation (inches).
+- `pressure`: sea-level pressure (mb).
+- `visib`: visibility (miles).
+
+__________________________________
+
+
+## Scatterplot of temp (y) vs time_hour (x), with color mapped to humidity:
+```{r}
+ggplot(early_january_weather, aes(x = time_hour, y = temp, color = humid)) +
+  geom_point(alpha = 0.7) +
+  labs(
+    title = "Temperature vs Time (colored by Humidity)",
+    x = "Time (hourly)",
+    y = "Temperature (°F)",
+    color = "Humidity"
+  ) +
+  theme_minimal()
+
+```
+
+## Patterns observed：
+Temperatures fluctuate in a diurnal pattern (daily cycles) and show an overall increase through the first ~two weeks of January, followed by a brief drop near the end of the window (consistent with the points dipping in the last days). Points with **higher humidity** tend to coincide with **lower to moderate temperatures**, whereas **warmer hours** often show **more moderate humidity**. There is also visible day‐to‐day variability around these trends.
+
+
+## Export your scatterplot:
+```{r}
+ggsave("scatter_temp_time.png", width = 7, height = 5)
+```
+
+
+
+
+
+
+# Probem 2
+## Create a data frame：
+```{r}
+set.seed(8105)
+
+df_p2 <- tibble::tibble(
+  z_num   = rnorm(10),                                  # a random sample of size 10 from a standard Normal distribution
+  z_pos   = z_num > 0,                                  # a logical vector indicating whether elements of the sample are greater than 0
+  z_char  = LETTERS[1:10],                              # a character vector of length 10
+  z_fact  = factor(rep(c("low","med","high"), length.out = 10),
+                   levels = c("low","med","high"))      # a factor vector of length 10, with 3 different factor “levels”
+)
+
+```
+
+## Take the mean of each variable：
+
+### loading the 'tidyverse' and using the 'pull' function:
+
+```{r message = FALSE, warning = FALSE}
+library(dplyr)
+```
+
+### Take the mean
+```{r}
+mean_num  <- df_p2 %>% pull(z_num)  %>% mean()
+mean_log  <- df_p2 %>% pull(z_pos)  %>% mean()  
+mean_chr  <- df_p2 %>% pull(z_char) %>% mean()
+mean_fac  <- df_p2 %>% pull(z_fact) %>% mean()
+
+```
+
+## What works and what doesn’t：
+**Results of taking the mean**
+
+- For the numeric variable, `mean()` works as expected.  
+- For the logical variable, R coerces `TRUE/FALSE` to `1/0`, so the mean equals the proportion of `TRUE` values.  
+- For the character variable, `mean()` fails and returns `NA` with a warning because characters cannot be averaged.  
+- For the factor variable, `mean()` also fails, because factors are not treated as numeric by default.
+
+
+## Applies the as.numeric function
+```{r  results='hide', warning = FALSE}
+log_to_num <- df_p2 %>% pull(z_pos)  %>% as.numeric()  
+chr_to_num <- df_p2 %>% pull(z_char) %>% as.numeric()  
+fac_to_num <- df_p2 %>% pull(z_fact) %>% as.numeric()  
+
+```
+
+
+## What happens, and why?:
+**Results of coercion**
+
+- `as.numeric(logical)` converts `TRUE` to 1 and `FALSE` to 0. This explains why taking the mean of a logical vector works: it is effectively the proportion of `TRUE`.  
+- `as.numeric(character)` returns all `NA` values (unless the characters are actually numeric strings). This explains why `mean(character)` fails.  
+- `as.numeric(factor)` returns the internal integer codes of the factor levels (e.g., `low = 1, med = 2, high = 3`), which usually does not reflect any true numeric meaning. Taking a mean of these codes would therefore be misleading.
